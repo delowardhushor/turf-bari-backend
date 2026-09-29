@@ -1,9 +1,12 @@
 import { User } from '../user/user.model';
 import {
   IEmailLoginPayload,
+  IEmailSignupPayload,
   IGoogleLoginPayload,
   ILoginResponse,
   IPhoneLoginPayload,
+  IPhoneSignupPayload,
+  ISignupResponse,
 } from './auth.interface';
 import ApiError from '../../errors/ApiError';
 import httpStatus from 'http-status';
@@ -139,6 +142,52 @@ const loginGoogle = async (payload: IGoogleLoginPayload): Promise<ILoginResponse
   return await formatLoginResponse(user);
 };
 
+const signupPhone = async (payload: IPhoneSignupPayload): Promise<ISignupResponse> => {
+  const { name, phoneNumber, password } = payload;
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ phoneNumber });
+  if (existingUser) {
+    throw new ApiError(httpStatus.CONFLICT, 'User with this phone number already exists');
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Create new user
+  const newUser = await User.create({
+    name,
+    phoneNumber,
+    password: hashedPassword,
+    role: 'user', // Default to normal user
+  });
+
+  return await formatLoginResponse(newUser);
+};
+
+const signupEmail = async (payload: IEmailSignupPayload): Promise<ISignupResponse> => {
+  const { name, email, password } = payload;
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw new ApiError(httpStatus.CONFLICT, 'User with this email already exists');
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Create new user
+  const newUser = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    role: 'user', // Default to normal user
+  });
+
+  return await formatLoginResponse(newUser);
+}
+
 const selectCompany = async (
   userId: string,
   companyId: string
@@ -180,4 +229,6 @@ export const AuthService = {
   loginPhone,
   loginGoogle,
   selectCompany,
+  signupPhone,
+  signupEmail
 };

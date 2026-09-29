@@ -41,6 +41,30 @@ const loginGoogle = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const signupPhone = catchAsync(async (req: Request, res: Response) => {
+  const { ...signupData } = req.body;
+  const result = await AuthService.signupPhone(signupData);
+
+  sendResponse<ILoginResponse>(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: 'Signed up successfully',
+    data: result,
+  });
+});
+
+const signupEmail = catchAsync(async (req: Request, res: Response) => {
+  const { ...signupData } = req.body;
+  const result = await AuthService.signupEmail(signupData);
+
+  sendResponse<ILoginResponse>(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: 'Signed up successfully',
+    data: result,
+  });
+});
+
 const selectCompany = catchAsync(async (req: Request, res: Response) => {
   const { companyId } = req.body;
   const userId = (req as any).user?.userId; // Populated by Auth security middleware
@@ -60,4 +84,6 @@ export const AuthController = {
   loginPhone,
   loginGoogle,
   selectCompany,
+  signupPhone,
+  signupEmail
 };

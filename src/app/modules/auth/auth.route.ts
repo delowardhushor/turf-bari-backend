@@ -35,4 +35,16 @@ router.post(
   AuthController.selectCompany
 );
 
+router.post(
+  '/signup/phone',
+  validateRequest(AuthValidation.signupPhoneZodSchema),
+  AuthController.signupPhone
+)
+
+router.post(
+  '/signup/email',
+  validateRequest(AuthValidation.signupEmailZodSchema),
+  AuthController.signupEmail
+)
+
 export const AuthRoutes = router;
