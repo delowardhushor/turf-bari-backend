@@ -152,14 +152,11 @@ const signupPhone = async (payload: IPhoneSignupPayload): Promise<ISignupRespons
     throw new ApiError(httpStatus.CONFLICT, 'User with this phone number already exists');
   }
 
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Create new user
+  // Create new user (the model's pre-save hook hashes the password)
   const newUser = await User.create({
     name,
     phoneNumber,
-    password: hashedPassword,
+    password,
     role: 'user', // Default to normal user
   });
 
@@ -175,14 +172,11 @@ const signupEmail = async (payload: IEmailSignupPayload): Promise<ISignupRespons
     throw new ApiError(httpStatus.CONFLICT, 'User with this email already exists');
   }
 
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Create new user
+  // Create new user (the model's pre-save hook hashes the password)
   const newUser = await User.create({
     name,
     email,
-    password: hashedPassword,
+    password,
     role: 'user', // Default to normal user
   });
 
