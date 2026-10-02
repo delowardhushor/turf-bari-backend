@@ -1,9 +1,16 @@
 import { Model, Types } from 'mongoose';
 
-export type ITimePricingRule = {
+// Index matches Date#getDay(): 0 = Sunday ... 6 = Saturday
+export const PRICING_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+export type PricingDay = (typeof PRICING_DAYS)[number];
+
+// One column of the owner's price table: a named time range with a price per day.
+// A day without a price falls back to pricingConfig.basePrice.
+export type ITimeBand = {
+  name: string; // e.g. "Morning"
   startTime: string; // e.g. "06:00"
-  endTime: string;   // e.g. "12:00"
-  price: number;     // specific price for this time range
+  endTime: string; // e.g. "12:00"
+  prices: Partial<Record<PricingDay, number>>;
 };
 
 export type ICampaign = {
@@ -14,9 +21,8 @@ export type ICampaign = {
 };
 
 export type IPricingConfig = {
-  basePrice: number;
-  weekendPrice?: number; // Price on Friday & Saturday (standard weekend in BD)
-  timeRules?: ITimePricingRule[];
+  basePrice: number; // fallback for any day/time not covered by a band price
+  timeBands?: ITimeBand[];
 };
 
 export type IGround = {

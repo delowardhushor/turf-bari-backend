@@ -1,5 +1,28 @@
 import { z } from 'zod';
 
+const timeString = (label: string) =>
+  z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, `${label} must be in HH:MM format`);
+
+const dayPrice = z.number().min(0, 'Price must be a non-negative number').optional();
+
+// One column of the price table: a time range plus a price for each weekday
+const timeBandZodSchema = z.object({
+  name: z.string().min(1, 'Time band name is required'),
+  startTime: timeString('Band start time'),
+  endTime: timeString('Band end time'),
+  prices: z
+    .object({
+      sun: dayPrice,
+      mon: dayPrice,
+      tue: dayPrice,
+      wed: dayPrice,
+      thu: dayPrice,
+      fri: dayPrice,
+      sat: dayPrice,
+    })
+    .default({}),
+});
+
 const createGroundZodSchema = z.object({
   body: z.object({
     name: z.string().min(1, 'Ground name is required'),
@@ -14,16 +37,7 @@ const createGroundZodSchema = z.object({
     }),
     pricingConfig: z.object({
       basePrice: z.number().min(0, 'Base price must be a non-negative number'),
-      weekendPrice: z.number().min(0, 'Weekend price must be a non-negative number').optional(),
-      timeRules: z
-        .array(
-          z.object({
-            startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Start time must be in HH:MM format'),
-            endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'End time must be in HH:MM format'),
-            price: z.number().min(0, 'Price must be a non-negative number'),
-          })
-        )
-        .optional(),
+      timeBands: z.array(timeBandZodSchema).optional(),
     }),
     campaigns: z
       .array(
@@ -56,16 +70,7 @@ const updateGroundZodSchema = z.object({
     pricingConfig: z
       .object({
         basePrice: z.number().min(0).optional(),
-        weekendPrice: z.number().min(0).optional(),
-        timeRules: z
-          .array(
-            z.object({
-              startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-              endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-              price: z.number().min(0),
-            })
-          )
-          .optional(),
+        timeBands: z.array(timeBandZodSchema).optional(),
       })
       .optional(),
     campaigns: z

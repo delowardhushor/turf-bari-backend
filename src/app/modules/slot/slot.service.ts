@@ -3,12 +3,7 @@ import { Slot } from './slot.model';
 import { Ground } from '../ground/ground.model';
 import ApiError from '../../errors/ApiError';
 import httpStatus from 'http-status';
-
-// Helper to convert HH:MM to minutes from midnight
-const timeToMinutes = (timeStr: string): number => {
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  return hours * 60 + minutes;
-};
+import { resolveSlotPrice, timeToMinutes } from '../ground/ground.pricing';
 
 // Helper to convert minutes from midnight to HH:MM
 const minutesToTime = (minutes: number): string => {
@@ -53,22 +48,12 @@ const getSlotsForDate = async (groundId: string, date: string): Promise<ISlot[]>
     );
   }
 
-  // Determine pricing modifiers
   // Parse date
   const [year, month, day] = date.split('-').map(Number);
   const dateObj = new Date(year, month - 1, day);
   const dayOfWeek = dateObj.getDay();
 
-  // Weekend check: Friday (5) & Saturday (6)
-  const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
-
-  // 1. Get base price
-  let defaultPrice = ground.pricingConfig.basePrice;
-  if (isWeekend && ground.pricingConfig.weekendPrice !== undefined) {
-    defaultPrice = ground.pricingConfig.weekendPrice;
-  }
-
-  // 2. Check active campaigns
+  // 1. Check active campaigns
   let discountPercentage = 0;
   if (ground.campaigns && ground.campaigns.length > 0) {
     const timeVal = dateObj.getTime();
@@ -91,20 +76,10 @@ const getSlotsForDate = async (groundId: string, date: string): Promise<ISlot[]>
     const slotStartStr = minutesToTime(currentMinutes);
     const slotEndStr = minutesToTime(currentMinutes + duration);
 
-    // 3. Determine time-specific price overrides
-    let slotPrice = defaultPrice;
-    if (ground.pricingConfig.timeRules && ground.pricingConfig.timeRules.length > 0) {
-      for (const rule of ground.pricingConfig.timeRules) {
-        const ruleStart = timeToMinutes(rule.startTime);
-        const ruleEnd = timeToMinutes(rule.endTime);
-        if (currentMinutes >= ruleStart && currentMinutes < ruleEnd) {
-          slotPrice = rule.price;
-          break; // Use the first matching time-rule
-        }
-      }
-    }
+    // 2. Price comes from the ground's day x time-band table
+    let slotPrice = resolveSlotPrice(ground.pricingConfig, dayOfWeek, currentMinutes);
 
-    // 4. Apply campaign discount
+    // 3. Apply campaign discount
     if (discountPercentage > 0) {
       slotPrice = slotPrice * (1 - discountPercentage / 100);
     }

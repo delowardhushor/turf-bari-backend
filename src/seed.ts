@@ -121,10 +121,10 @@ async function seedDemo() {
     operatingHours: { start: '06:00', end: '23:00' },
     pricingConfig: {
       basePrice: 1500,
-      weekendPrice: 2200,
-      timeRules: [
-        { startTime: '06:00', endTime: '12:00', price: 1200 },
-        { startTime: '17:00', endTime: '23:00', price: 2000 },
+      timeBands: [
+        { name: 'Morning', startTime: '06:00', endTime: '12:00', prices: { sun: 1200, mon: 1200, tue: 1200, wed: 1200, thu: 1200, fri: 1800, sat: 1800 } },
+        { name: 'Afternoon', startTime: '12:00', endTime: '17:00', prices: { sun: 1500, mon: 1500, tue: 1500, wed: 1500, thu: 1500, fri: 2200, sat: 2200 } },
+        { name: 'Evening', startTime: '17:00', endTime: '23:00', prices: { sun: 2000, mon: 2000, tue: 2000, wed: 2000, thu: 2000, fri: 2600, sat: 2600 } },
       ],
     },
   });
@@ -135,7 +135,10 @@ async function seedDemo() {
     slotDuration: 60,
     advancePayment: false,
     operatingHours: { start: '08:00', end: '22:00' },
-    pricingConfig: { basePrice: 1000, weekendPrice: 1400 },
+    pricingConfig: {
+      basePrice: 1000,
+      timeBands: [{ name: 'All day', startTime: '08:00', endTime: '22:00', prices: { fri: 1400, sat: 1400 } }],
+    },
   });
   await ensureGround(sportsArena._id, {
     name: 'Arena Ground',
@@ -144,7 +147,10 @@ async function seedDemo() {
     slotDuration: 120,
     advancePayment: true,
     operatingHours: { start: '07:00', end: '21:00' },
-    pricingConfig: { basePrice: 2500, weekendPrice: 3200 },
+    pricingConfig: {
+      basePrice: 2500,
+      timeBands: [{ name: 'All day', startTime: '07:00', endTime: '21:00', prices: { fri: 3200, sat: 3200 } }],
+    },
   });
 
   log(`\nDemo logins (password: ${DEMO_PASSWORD}):`);

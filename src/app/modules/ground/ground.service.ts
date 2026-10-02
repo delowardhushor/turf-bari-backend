@@ -4,8 +4,20 @@ import ApiError from '../../errors/ApiError';
 import httpStatus from 'http-status';
 import { SlotService } from '../slot/slot.service';
 import { ISlot } from '../slot/slot.interface';
+import { validateTimeBands } from './ground.pricing';
+
+const assertValidTimeBands = (
+  bands: IGround['pricingConfig']['timeBands'],
+  operatingHours: IGround['operatingHours']
+) => {
+  const error = bands && validateTimeBands(bands, operatingHours);
+  if (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, error);
+  }
+};
 
 const createGround = async (payload: IGround): Promise<IGround> => {
+  assertValidTimeBands(payload.pricingConfig.timeBands, payload.operatingHours);
   const result = await Ground.create(payload);
   return result;
 };
@@ -36,7 +48,24 @@ const updateGround = async (
     throw new ApiError(httpStatus.NOT_FOUND, 'Ground not found');
   }
 
-  const result = await Ground.findByIdAndUpdate(id, payload, {
+  const { pricingConfig, ...rest } = payload;
+
+  // Bands are checked against the operating hours the ground will have after this update
+  assertValidTimeBands(
+    pricingConfig?.timeBands ?? isExist.pricingConfig.timeBands,
+    payload.operatingHours ?? isExist.operatingHours
+  );
+
+  // Set pricingConfig fields individually so a partial update (e.g. only basePrice)
+  // doesn't wipe the rest of the price table
+  const update: Record<string, any> = { ...rest };
+  if (pricingConfig) {
+    for (const [key, value] of Object.entries(pricingConfig)) {
+      update[`pricingConfig.${key}`] = value;
+    }
+  }
+
+  const result = await Ground.findByIdAndUpdate(id, update, {
     new: true,
   });
   return result;

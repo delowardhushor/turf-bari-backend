@@ -1,6 +1,30 @@
 import { Schema, model } from 'mongoose';
 import { IGround, GroundModelType } from './ground.interface';
 
+// Price per weekday for one time band (a column of the owner's price table)
+const bandPricesSchema = new Schema(
+  {
+    sun: { type: Number, min: 0 },
+    mon: { type: Number, min: 0 },
+    tue: { type: Number, min: 0 },
+    wed: { type: Number, min: 0 },
+    thu: { type: Number, min: 0 },
+    fri: { type: Number, min: 0 },
+    sat: { type: Number, min: 0 },
+  },
+  { _id: false }
+);
+
+const timeBandSchema = new Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
+    prices: { type: bandPricesSchema, default: () => ({}) },
+  },
+  { _id: false }
+);
+
 const groundSchema = new Schema<IGround, GroundModelType>(
   {
     name: {
@@ -52,16 +76,7 @@ const groundSchema = new Schema<IGround, GroundModelType>(
         type: Number,
         required: true,
       },
-      weekendPrice: {
-        type: Number,
-      },
-      timeRules: [
-        {
-          startTime: { type: String, required: true },
-          endTime: { type: String, required: true },
-          price: { type: Number, required: true },
-        },
-      ],
+      timeBands: [timeBandSchema],
     },
     campaigns: [
       {
