@@ -7,6 +7,8 @@ export default {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '5000', 10),
   database_url: process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/turfbari',
+  // Where uploaded images live on disk; served publicly under /uploads
+  upload_dir: path.resolve(process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')),
   bcrypt_salt_rounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10),
   // Temporary: every OTP is this fixed code until an SMS/email provider is wired up.
   // Set OTP_STATIC_CODE to an empty string to switch back to random codes.

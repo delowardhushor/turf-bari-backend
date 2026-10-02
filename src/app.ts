@@ -3,6 +3,7 @@ import cors from 'cors';
 import httpStatus from 'http-status';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
 import router from './app/routes';
+import config from './app/config';
 
 const app: Application = express();
 
@@ -10,6 +11,9 @@ const app: Application = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Uploaded images (ground photos)
+app.use('/uploads', express.static(config.upload_dir, { maxAge: '7d', immutable: true }));
 
 // Application Routes
 app.use('/api/v1', router);

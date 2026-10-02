@@ -1,4 +1,5 @@
-import { IGround } from './ground.interface';
+import { IGround, MAX_GROUND_IMAGES } from './ground.interface';
+import { deleteImageFiles } from './ground.upload';
 import { Ground } from './ground.model';
 import ApiError from '../../errors/ApiError';
 import httpStatus from 'http-status';
@@ -52,6 +53,18 @@ const updateGround = async (
 
   const { pricingConfig, ...rest } = payload;
 
+  // Images can only be reordered or removed here; uploads go through addGroundImages,
+  // so every path must already belong to this ground
+  const removedImages: string[] = [];
+  if (payload.images) {
+    const current = new Set(isExist.images);
+    if (payload.images.some((p) => !current.has(p)) || new Set(payload.images).size !== payload.images.length) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Images must be ones already uploaded to this ground');
+    }
+    const kept = new Set(payload.images);
+    removedImages.push(...isExist.images.filter((p) => !kept.has(p)));
+  }
+
   if (payload.sports) {
     await SportService.assertValidGroundSports(payload.sports, isExist.sports);
   }
@@ -74,7 +87,23 @@ const updateGround = async (
   const result = await Ground.findByIdAndUpdate(id, update, {
     new: true,
   });
+  await deleteImageFiles(removedImages);
   return result;
+};
+
+// Appends already-stored files to the ground's gallery (after its existing images)
+const addGroundImages = async (id: string, imagePaths: string[]): Promise<IGround | null> => {
+  const ground = await Ground.findById(id);
+  if (!ground) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Ground not found');
+  }
+  if (ground.images.length + imagePaths.length > MAX_GROUND_IMAGES) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `A ground can have at most ${MAX_GROUND_IMAGES} images (it has ${ground.images.length})`
+    );
+  }
+  return Ground.findByIdAndUpdate(id, { $push: { images: { $each: imagePaths } } }, { new: true });
 };
 
 const deleteGround = async (id: string): Promise<IGround | null> => {
@@ -84,6 +113,7 @@ const deleteGround = async (id: string): Promise<IGround | null> => {
   }
 
   const result = await Ground.findByIdAndDelete(id);
+  await deleteImageFiles(isExist.images);
   return result;
 };
 
@@ -137,5 +167,6 @@ export const GroundService = {
   getAllGrounds,
   getSingleGround,
   updateGround,
+  addGroundImages,
   deleteGround,
 };

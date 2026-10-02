@@ -2,6 +2,7 @@ import express from 'express';
 import validateRequest from '../../middlewares/validateRequest';
 import { GroundController } from './ground.controller';
 import { GroundValidation } from './ground.validation';
+import { uploadGroundImages } from './ground.upload';
 import auth from '../../middlewares/auth';
 import jwt from 'jsonwebtoken';
 import config from '../../config';
@@ -48,6 +49,14 @@ router.patch(
   auth('super_admin', 'turf_owner', 'maintainer'),
   validateRequest(GroundValidation.updateGroundZodSchema),
   GroundController.updateGround
+);
+
+// Multipart: field "images", up to 10 files. Added to the end of the ground's gallery.
+router.post(
+  '/:id/images',
+  auth('super_admin', 'turf_owner', 'maintainer'),
+  uploadGroundImages,
+  GroundController.addGroundImages
 );
 
 router.delete(

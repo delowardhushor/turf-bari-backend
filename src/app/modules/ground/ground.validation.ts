@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_GROUND_IMAGES } from './ground.interface';
 
 const timeString = (label: string) =>
   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, `${label} must be in HH:MM format`);
@@ -22,6 +23,11 @@ const timeBandZodSchema = z.object({
     })
     .default({}),
 });
+
+// Only paths produced by the upload endpoint are accepted, never arbitrary URLs
+const groundImagePath = z
+  .string()
+  .regex(/^\/uploads\/grounds\/[\w-]+\.(jpg|png|webp)$/, 'Invalid image path');
 
 const createGroundZodSchema = z.object({
   body: z.object({
@@ -57,6 +63,8 @@ const updateGroundZodSchema = z.object({
   body: z.object({
     name: z.string().optional(),
     description: z.string().optional(),
+    // Reorder or remove existing images; new ones come in through POST /grounds/:id/images
+    images: z.array(groundImagePath).max(MAX_GROUND_IMAGES).optional(),
     companyId: z.string().optional(),
     sports: z.array(z.string().min(1)).min(1).optional(),
     slotDuration: z.number().min(15).optional(),

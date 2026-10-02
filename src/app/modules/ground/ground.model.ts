@@ -35,6 +35,10 @@ const groundSchema = new Schema<IGround, GroundModelType>(
     description: {
       type: String,
     },
+    images: {
+      type: [String],
+      default: [],
+    },
     companyId: {
       type: Schema.Types.ObjectId,
       ref: 'TurfCompany',

@@ -1,10 +1,29 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import catchAsync from '../../shared/catchAsync';
 import sendResponse from '../../shared/sendResponse';
 import httpStatus from 'http-status';
 import { GroundService } from './ground.service';
 import { IGround } from './ground.interface';
 import ApiError from '../../errors/ApiError';
+import { deleteImageFiles, toImagePath } from './ground.upload';
+
+// Super admins can manage any ground; everyone else only grounds of their active company.
+// The ground comes back with companyId populated, so compare its _id, not the document itself.
+const assertCanManage = (
+  user: NonNullable<Request['user']>,
+  ground: IGround,
+  action: 'modify' | 'delete'
+) => {
+  if (user.role === 'super_admin') return;
+  const groundCompanyId = (ground.companyId as unknown as { _id: Types.ObjectId })._id.toString();
+  if (!user.companyId || groundCompanyId !== user.companyId) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      `Forbidden: You do not have permission to ${action} this ground`
+    );
+  }
+};
 
 const createGround = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
@@ -107,14 +126,7 @@ const updateGround = catchAsync(async (req: Request, res: Response) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Ground not found');
   }
 
-  if (user.role !== 'super_admin') {
-    if (!user.companyId || ground.companyId.toString() !== user.companyId) {
-      throw new ApiError(
-        httpStatus.FORBIDDEN,
-        'Forbidden: You do not have permission to modify this ground'
-      );
-    }
-  }
+  assertCanManage(user, ground, 'modify');
 
   const result = await GroundService.updateGround(id, groundData);
 
@@ -124,6 +136,41 @@ const updateGround = catchAsync(async (req: Request, res: Response) => {
     message: 'Ground updated successfully',
     data: result,
   });
+});
+
+const addGroundImages = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+  const imagePaths = files.map(toImagePath);
+
+  try {
+    if (!user) {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'You are not authorized');
+    }
+    if (imagePaths.length === 0) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Choose at least one image to upload');
+    }
+
+    const id = req.params.id as string;
+    const ground = await GroundService.getSingleGround(id);
+    if (!ground) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Ground not found');
+    }
+    assertCanManage(user, ground, 'modify');
+
+    const result = await GroundService.addGroundImages(id, imagePaths);
+
+    sendResponse<IGround>(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: 'Images uploaded successfully',
+      data: result,
+    });
+  } catch (error) {
+    // The files are already on disk by now; don't leave them behind on a rejected request
+    await deleteImageFiles(imagePaths);
+    throw error;
+  }
 });
 
 const deleteGround = catchAsync(async (req: Request, res: Response) => {
@@ -140,14 +187,7 @@ const deleteGround = catchAsync(async (req: Request, res: Response) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Ground not found');
   }
 
-  if (user.role !== 'super_admin') {
-    if (!user.companyId || ground.companyId.toString() !== user.companyId) {
-      throw new ApiError(
-        httpStatus.FORBIDDEN,
-        'Forbidden: You do not have permission to delete this ground'
-      );
-    }
-  }
+  assertCanManage(user, ground, 'delete');
 
   const result = await GroundService.deleteGround(id);
 
@@ -165,5 +205,6 @@ export const GroundController = {
   searchGrounds,
   getSingleGround,
   updateGround,
+  addGroundImages,
   deleteGround,
 };

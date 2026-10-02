@@ -25,9 +25,12 @@ export type IPricingConfig = {
   timeBands?: ITimeBand[];
 };
 
+export const MAX_GROUND_IMAGES = 10;
+
 export type IGround = {
   name: string;
   description?: string;
+  images: string[]; // public paths like /uploads/grounds/<id>.jpg; the first one is the cover
   companyId: Types.ObjectId;
   sports: string[]; // sports playable on this ground, e.g. ['cricket', 'football']
   slotDuration: number; // in minutes (e.g. 60, 90)
