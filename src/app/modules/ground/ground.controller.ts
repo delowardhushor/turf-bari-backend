@@ -58,6 +58,28 @@ const getAllGrounds = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const searchGrounds = catchAsync(async (req: Request, res: Response) => {
+  const { date, sport, startTime, endTime, companyId } = req.query as Record<
+    string,
+    string | undefined
+  >;
+
+  const result = await GroundService.searchGrounds({
+    date: date as string,
+    sport,
+    startTime,
+    endTime,
+    companyId,
+  });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Available grounds retrieved successfully',
+    data: result,
+  });
+});
+
 const getSingleGround = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await GroundService.getSingleGround(id);
@@ -140,6 +162,7 @@ const deleteGround = catchAsync(async (req: Request, res: Response) => {
 export const GroundController = {
   createGround,
   getAllGrounds,
+  searchGrounds,
   getSingleGround,
   updateGround,
   deleteGround,

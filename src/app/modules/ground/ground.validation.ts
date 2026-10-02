@@ -5,7 +5,7 @@ const createGroundZodSchema = z.object({
     name: z.string().min(1, 'Ground name is required'),
     description: z.string().optional(),
     companyId: z.string().min(1, 'Company ID is required'),
-    sportsType: z.string().min(1, 'Sports type is required'),
+    sports: z.array(z.string().min(1)).min(1, 'At least one sport is required'),
     slotDuration: z.number().min(15, 'Slot duration must be at least 15 minutes'),
     advancePayment: z.boolean().optional(),
     operatingHours: z.object({
@@ -44,7 +44,7 @@ const updateGroundZodSchema = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
     companyId: z.string().optional(),
-    sportsType: z.string().optional(),
+    sports: z.array(z.string().min(1)).min(1).optional(),
     slotDuration: z.number().min(15).optional(),
     advancePayment: z.boolean().optional(),
     operatingHours: z
@@ -82,7 +82,18 @@ const updateGroundZodSchema = z.object({
   }),
 });
 
+const searchGroundZodSchema = z.object({
+  query: z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+    sport: z.string().min(1).optional(),
+    startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'startTime must be HH:MM').optional(),
+    endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'endTime must be HH:MM').optional(),
+    companyId: z.string().optional(),
+  }),
+});
+
 export const GroundValidation = {
+  searchGroundZodSchema,
   createGroundZodSchema,
   updateGroundZodSchema,
 };

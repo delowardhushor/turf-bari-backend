@@ -1,9 +1,13 @@
 import { Model, Types } from 'mongoose';
 
 export type IBooking = {
-  userId: Types.ObjectId;
+  userId?: Types.ObjectId; // absent for walk-in / phone bookings made by staff
+  customerName?: string;
+  customerPhone?: string;
+  source: 'online' | 'manual';
   groundId: Types.ObjectId;
   slotId: Types.ObjectId;
+  sport: string;
   companyId: Types.ObjectId;
   bookingDate: string; // YYYY-MM-DD
   totalPrice: number;

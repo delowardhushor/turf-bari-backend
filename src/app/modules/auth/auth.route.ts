@@ -47,4 +47,23 @@ router.post(
   AuthController.signupEmail
 )
 
+router.post(
+  '/change-password',
+  auth('super_admin', 'turf_owner', 'maintainer', 'user'),
+  validateRequest(AuthValidation.changePasswordZodSchema),
+  AuthController.changePassword
+);
+
+router.post(
+  '/forgot-password',
+  validateRequest(AuthValidation.forgotPasswordZodSchema),
+  AuthController.forgotPassword
+);
+
+router.post(
+  '/reset-password',
+  validateRequest(AuthValidation.resetPasswordZodSchema),
+  AuthController.resetPassword
+);
+
 export const AuthRoutes = router;

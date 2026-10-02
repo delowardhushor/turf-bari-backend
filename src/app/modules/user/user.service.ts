@@ -20,10 +20,14 @@ const updateUser = async (
   id: string,
   payload: Partial<IUser>
 ): Promise<IUser | null> => {
-  const result = await User.findByIdAndUpdate(id, payload, {
-    new: true,
-  });
-  return result;
+  // Load + save (not findByIdAndUpdate) so the pre-save hook hashes a new password
+  const user = await User.findById(id);
+  if (!user) {
+    return null;
+  }
+  user.set(payload);
+  await user.save();
+  return user;
 };
 
 const deleteUser = async (id: string): Promise<IUser | null> => {

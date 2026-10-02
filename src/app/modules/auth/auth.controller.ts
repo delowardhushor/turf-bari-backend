@@ -79,7 +79,46 @@ const selectCompany = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  const { oldPassword, newPassword } = req.body;
+  await AuthService.changePassword(req.user!.userId, oldPassword, newPassword);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Password changed successfully',
+    data: null,
+  });
+});
+
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email, phoneNumber } = req.body;
+  await AuthService.forgotPassword({ email, phoneNumber });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'If an account exists, an OTP has been sent',
+    data: null,
+  });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email, phoneNumber, otp, newPassword } = req.body;
+  await AuthService.resetPassword({ email, phoneNumber }, otp, newPassword);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Password reset successfully',
+    data: null,
+  });
+});
+
 export const AuthController = {
+  changePassword,
+  forgotPassword,
+  resetPassword,
   loginEmail,
   loginPhone,
   loginGoogle,

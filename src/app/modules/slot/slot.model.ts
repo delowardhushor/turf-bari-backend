@@ -43,4 +43,7 @@ const slotSchema = new Schema<ISlot, SlotModelType>(
   }
 );
 
+// One slot per ground/date/start time (prevents duplicates from concurrent generation)
+slotSchema.index({ groundId: 1, date: 1, startTime: 1 }, { unique: true });
+
 export const Slot = model<ISlot, SlotModelType>('Slot', slotSchema);

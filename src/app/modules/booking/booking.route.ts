@@ -13,6 +13,14 @@ router.post(
   BookingController.createBooking
 );
 
+// Must be declared before '/:id' routes
+router.post(
+  '/manual',
+  auth('super_admin', 'turf_owner', 'maintainer'),
+  validateRequest(BookingValidation.createManualBookingZodSchema),
+  BookingController.createManualBooking
+);
+
 router.get(
   '/',
   auth('super_admin', 'turf_owner', 'maintainer', 'user'),

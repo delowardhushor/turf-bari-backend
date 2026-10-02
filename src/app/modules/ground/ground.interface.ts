@@ -23,7 +23,7 @@ export type IGround = {
   name: string;
   description?: string;
   companyId: Types.ObjectId;
-  sportsType: string; // e.g. 'Cricket' | 'Football' | 'Table Tennis' | 'Pool'
+  sports: string[]; // sports playable on this ground, e.g. ['cricket', 'football']
   slotDuration: number; // in minutes (e.g. 60, 90)
   advancePayment: boolean; // true/false
   operatingHours: {

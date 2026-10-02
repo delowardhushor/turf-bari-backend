@@ -13,6 +13,7 @@ import httpStatus from 'http-status';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import config from '../../config';
+import crypto from 'crypto';
 import { TurfCompany } from '../turfCompany/turfCompany.model';
 
 // Helper to sign JWT
@@ -224,7 +225,93 @@ const selectCompany = async (
   };
 };
 
+const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
+
+const hashOtp = (otp: string): string =>
+  crypto.createHash('sha256').update(otp).digest('hex');
+
+const changePassword = async (
+  userId: string,
+  oldPassword: string,
+  newPassword: string
+): Promise<void> => {
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  if (!user.password) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Password is not set for this account');
+  }
+  if (!(await comparePassword(oldPassword, user.password))) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Old password is incorrect');
+  }
+
+  // pre-save hook hashes it
+  user.password = newPassword;
+  await user.save();
+};
+
+// Generates a 6-digit OTP. Always resolves the same way so callers can't probe
+// which emails/phones are registered.
+const forgotPassword = async (identifier: {
+  email?: string;
+  phoneNumber?: string;
+}): Promise<void> => {
+  const user = await User.findOne(identifier);
+  if (!user) return;
+
+  const otp = config.otp_static_code || crypto.randomInt(100000, 1000000).toString();
+  user.resetOtpHash = hashOtp(otp);
+  user.resetOtpExpires = new Date(Date.now() + OTP_TTL_MS);
+  user.resetOtpAttempts = 0;
+  await user.save();
+
+  // TODO: deliver via SMS / email provider. Until one is wired up, log in dev only.
+  if (config.env !== 'production' && !config.otp_static_code) {
+    console.log(`[forgot-password] OTP for ${identifier.email ?? identifier.phoneNumber}: ${otp}`);
+  }
+};
+
+const resetPassword = async (
+  identifier: { email?: string; phoneNumber?: string },
+  otp: string,
+  newPassword: string
+): Promise<void> => {
+  const invalid = new ApiError(httpStatus.BAD_REQUEST, 'Invalid or expired OTP');
+
+  const user = await User.findOne(identifier).select(
+    '+resetOtpHash +resetOtpExpires +resetOtpAttempts'
+  );
+  if (!user || !user.resetOtpHash || !user.resetOtpExpires) throw invalid;
+
+  const clear = () => {
+    user.resetOtpHash = undefined;
+    user.resetOtpExpires = undefined;
+    user.resetOtpAttempts = 0;
+  };
+
+  if (user.resetOtpExpires.getTime() < Date.now() || (user.resetOtpAttempts ?? 0) >= OTP_MAX_ATTEMPTS) {
+    clear();
+    await user.save();
+    throw invalid;
+  }
+
+  if (user.resetOtpHash !== hashOtp(otp)) {
+    user.resetOtpAttempts = (user.resetOtpAttempts ?? 0) + 1;
+    await user.save();
+    throw invalid;
+  }
+
+  user.password = newPassword;
+  clear();
+  await user.save();
+};
+
 export const AuthService = {
+  changePassword,
+  forgotPassword,
+  resetPassword,
   loginEmail,
   loginPhone,
   loginGoogle,

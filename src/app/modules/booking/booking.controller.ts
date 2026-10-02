@@ -12,13 +12,49 @@ const createBooking = catchAsync(async (req: Request, res: Response) => {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'You are not authorized');
   }
 
-  const { slotId } = req.body;
-  const result = await BookingService.createBooking(user.userId, slotId);
+  const { slotId, sport } = req.body;
+  const result = await BookingService.createBooking({
+    userId: user.userId,
+    slotId,
+    sport,
+  });
 
   sendResponse<IBooking>(res, {
     statusCode: httpStatus.CREATED,
     success: true,
     message: 'Booking created successfully',
+    data: result,
+  });
+});
+
+// Owner / maintainer / admin books a slot for a customer (e.g. over the phone)
+const createManualBooking = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'You are not authorized');
+  }
+
+  if (user.role !== 'super_admin' && !user.companyId) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'Please select an active company first'
+    );
+  }
+
+  const { slotId, sport, customerName, customerPhone, advancePaid, paymentStatus } =
+    req.body;
+
+  const result = await BookingService.createBooking({
+    slotId,
+    sport,
+    manual: { customerName, customerPhone, advancePaid, paymentStatus },
+    enforceCompanyId: user.role === 'super_admin' ? undefined : user.companyId!,
+  });
+
+  sendResponse<IBooking>(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: 'Manual booking created successfully',
     data: result,
   });
 });
@@ -69,7 +105,7 @@ const getSingleBooking = catchAsync(async (req: Request, res: Response) => {
   }
 
   // Authorization checks
-  if (user.role === 'user' && result.userId._id.toString() !== user.userId) {
+  if (user.role === 'user' && result.userId?._id.toString() !== user.userId) {
     throw new ApiError(
       httpStatus.FORBIDDEN,
       'Forbidden: You do not have permission to view this booking'
@@ -134,6 +170,7 @@ const updateBooking = catchAsync(async (req: Request, res: Response) => {
 
 export const BookingController = {
   createBooking,
+  createManualBooking,
   getAllBookings,
   getSingleBooking,
   updateBooking,

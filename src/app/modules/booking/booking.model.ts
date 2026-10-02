@@ -6,7 +6,14 @@ const bookingSchema = new Schema<IBooking, BookingModelType>(
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+    },
+    // Walk-in / phone bookings created by staff
+    customerName: { type: String, trim: true },
+    customerPhone: { type: String, trim: true },
+    source: {
+      type: String,
+      enum: ['online', 'manual'],
+      default: 'online',
     },
     groundId: {
       type: Schema.Types.ObjectId,
@@ -17,7 +24,12 @@ const bookingSchema = new Schema<IBooking, BookingModelType>(
       type: Schema.Types.ObjectId,
       ref: 'Slot',
       required: true,
-      unique: true, // A slot can only be booked once
+    },
+    sport: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
     },
     companyId: {
       type: Schema.Types.ObjectId,
@@ -54,6 +66,13 @@ const bookingSchema = new Schema<IBooking, BookingModelType>(
       virtuals: true,
     },
   }
+);
+
+// A slot can have only one active booking; cancelled bookings free it up again.
+// (Drop the old unique index first: db.bookings.dropIndex('slotId_1'))
+bookingSchema.index(
+  { slotId: 1 },
+  { unique: true, partialFilterExpression: { status: { $in: ['pending', 'confirmed'] } } }
 );
 
 export const Booking = model<IBooking, BookingModelType>('Booking', bookingSchema);

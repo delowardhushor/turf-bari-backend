@@ -2,34 +2,146 @@
 	"info": {
 		"_postman_id": "4b6c3749-8d19-48fb-bc44-59e31dcd8859",
 		"name": "TurfBari API Collection",
-		"description": "Collection to test TurfBari Authentication, Users, Turf Companies, Grounds, Slots, and Bookings APIs.",
+		"description": "TurfBari backend: Auth (signup/login/password reset), Users, Turf Companies, Grounds (multi-sport + search), Slots, Bookings (online + manual).\n\nFlow: login -> (owner) Select Active Company -> create ground -> Search/Get Slots -> Create Booking. Login and create requests save auth_token and ids into collection variables automatically.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
 	},
 	"item": [
 		{
 			"name": "Auth",
 			"item": [
 				{
-					"name": "Email Login",
+					"name": "Signup (Email)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/signup/email",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"signup",
+								"email"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Rahim Uddin\",\n  \"email\": \"user@turfbari.com\",\n  \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"response": [],
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.data && jsonData.data.accessToken) {",
-									"        pm.collectionVariables.set(\"auth_token\", jsonData.data.accessToken);",
-									"    }",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    if (d && d.accessToken) { pm.collectionVariables.set('auth_token', d.accessToken); }",
+									"    if (d && d.user && d.user.id) { pm.collectionVariables.set('user_id', d.user.id); }",
 									"}"
-								],
-								"type": "text/javascript"
+								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Signup (Phone)",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/signup/phone",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"signup",
+								"phone"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Karim Hossain\",\n  \"phoneNumber\": \"+8801712345678\",\n  \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    if (d && d.accessToken) { pm.collectionVariables.set('auth_token', d.accessToken); }",
+									"    if (d && d.user && d.user.id) { pm.collectionVariables.set('user_id', d.user.id); }",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Login (Email)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/login/email",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login",
+								"email"
+							]
+						},
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"email\": \"owner@turfbari.com\",\n  \"password\": \"password123\"\n}",
@@ -39,33 +151,48 @@
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/auth/login/email"
+						"auth": {
+							"type": "noauth"
 						}
 					},
-					"response": []
-				},
-				{
-					"name": "Phone Login",
+					"response": [],
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.data && jsonData.data.accessToken) {",
-									"        pm.collectionVariables.set(\"auth_token\", jsonData.data.accessToken);",
-									"    }",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    if (d && d.accessToken) { pm.collectionVariables.set('auth_token', d.accessToken); }",
+									"    if (d && d.user && d.user.id) { pm.collectionVariables.set('user_id', d.user.id); }",
 									"}"
-								],
-								"type": "text/javascript"
+								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Login (Phone)",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/login/phone",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login",
+								"phone"
+							]
+						},
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"phoneNumber\": \"+8801712345678\",\n  \"password\": \"password123\"\n}",
@@ -75,47 +202,77 @@
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/auth/login/phone"
+						"auth": {
+							"type": "noauth"
 						}
 					},
-					"response": []
-				},
-				{
-					"name": "Google Social Login",
+					"response": [],
 					"event": [
 						{
 							"listen": "test",
 							"script": {
+								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.data && jsonData.data.accessToken) {",
-									"        pm.collectionVariables.set(\"auth_token\", jsonData.data.accessToken);",
-									"    }",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    if (d && d.accessToken) { pm.collectionVariables.set('auth_token', d.accessToken); }",
+									"    if (d && d.user && d.user.id) { pm.collectionVariables.set('user_id', d.user.id); }",
 									"}"
-								],
-								"type": "text/javascript"
+								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Login (Google)",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/login/google",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login",
+								"google"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"googleId\": \"google_123456789\",\n  \"email\": \"user@gmail.com\",\n  \"name\": \"John Doe\"\n}",
+							"raw": "{\n  \"googleId\": \"google-uid-123\",\n  \"email\": \"user@gmail.com\",\n  \"name\": \"Google User\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/auth/login/google"
+						"auth": {
+							"type": "noauth"
 						}
 					},
-					"response": []
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    if (d && d.accessToken) { pm.collectionVariables.set('auth_token', d.accessToken); }",
+									"    if (d && d.user && d.user.id) { pm.collectionVariables.set('user_id', d.user.id); }",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Select Active Company",
@@ -123,11 +280,20 @@
 						"method": "POST",
 						"header": [
 							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{base_url}}/auth/select-company",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"select-company"
+							]
+						},
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"companyId\": \"{{company_id}}\"\n}",
@@ -137,36 +303,215 @@
 								}
 							}
 						},
+						"description": "Owner/maintainer/admin. Returns a new token scoped to the company - it replaces auth_token automatically. Required before managing grounds/bookings."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    if (d && d.accessToken) { pm.collectionVariables.set('auth_token', d.accessToken); }",
+									"    if (d && d.user && d.user.id) { pm.collectionVariables.set('user_id', d.user.id); }",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"url": {
-							"raw": "{{base_url}}/auth/select-company"
+							"raw": "{{base_url}}/auth/change-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"change-password"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						}
 					},
 					"response": []
-				}
-			]
-		},
-		{
-			"name": "User",
-			"item": [
+				},
 				{
-					"name": "Create User",
+					"name": "Forgot Password (Email)",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/forgot-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"forgot-password"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"John Owner\",\n  \"email\": \"owner@turfbari.com\",\n  \"phoneNumber\": \"+8801712345678\",\n  \"password\": \"password123\",\n  \"role\": \"turf_owner\"\n}",
+							"raw": "{\n  \"email\": \"user@turfbari.com\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
+						"auth": {
+							"type": "noauth"
+						},
+						"description": "Sends a 6-digit OTP. No SMS/email provider yet: in dev the OTP is printed in the server console."
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password (Phone)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"url": {
-							"raw": "{{base_url}}/users"
+							"raw": "{{base_url}}/auth/forgot-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"forgot-password"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+8801712345678\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/reset-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"reset-password"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@turfbari.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"newpassword123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						},
+						"description": "Use phoneNumber instead of email for phone accounts. OTP expires in 10 minutes, 5 wrong tries invalidate it."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User (super_admin; self for get/update)",
+			"item": [
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Turf Owner\",\n  \"email\": \"owner@turfbari.com\",\n  \"phoneNumber\": \"+8801712345678\",\n  \"password\": \"password123\",\n  \"role\": \"turf_owner\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "super_admin only. Use this to create owners and maintainers."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('user_id', id); }",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Get All Users",
@@ -174,8 +519,15 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/users"
-						}
+							"raw": "{{base_url}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							]
+						},
+						"description": "super_admin only."
 					},
 					"response": []
 				},
@@ -185,8 +537,16 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/users/{{user_id}}"
-						}
+							"raw": "{{base_url}}/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "super_admin, or the user themselves."
 					},
 					"response": []
 				},
@@ -194,19 +554,32 @@
 					"name": "Update User",
 					"request": {
 						"method": "PATCH",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"John Owner Updated\",\n  \"phoneNumber\": \"+8801712345679\"\n}",
+							"raw": "{\n  \"name\": \"Updated Name\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/users/{{user_id}}"
-						}
+						"description": "Non-admins cannot change role/companies/googleId."
 					},
 					"response": []
 				},
@@ -216,8 +589,16 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/users/{{user_id}}"
-						}
+							"raw": "{{base_url}}/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "super_admin only."
 					},
 					"response": []
 				}
@@ -230,32 +611,81 @@
 					"name": "Create Turf Company",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/turf-companies",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"turf-companies"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Turf Arena Dhaka\",\n  \"logo\": \"https://example.com/logo.png\",\n  \"address\": \"Banani, Dhaka\",\n  \"ownerId\": \"{{user_id}}\"\n}",
+							"raw": "{\n  \"name\": \"Green Field Turf\",\n  \"logo\": \"https://example.com/logo.png\",\n  \"address\": \"Dhanmondi, Dhaka\",\n  \"ownerId\": \"{{user_id}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/turf-companies"
-						}
+						"description": "super_admin or turf_owner. For owners, ownerId is forced to themselves."
 					},
-					"response": []
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('company_id', id); }",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Get All Turf Companies",
+					"name": "Get My / All Turf Companies",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/turf-companies"
-						}
+							"raw": "{{base_url}}/turf-companies",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"turf-companies"
+							]
+						},
+						"description": "super_admin sees all; owner/maintainer see only their linked companies."
 					},
-					"response": []
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('company_id', id); }",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Get Single Turf Company",
@@ -263,7 +693,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/turf-companies/{{company_id}}"
+							"raw": "{{base_url}}/turf-companies/{{company_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"turf-companies",
+								"{{company_id}}"
+							]
 						}
 					},
 					"response": []
@@ -272,19 +709,32 @@
 					"name": "Update Turf Company",
 					"request": {
 						"method": "PATCH",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/turf-companies/{{company_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"turf-companies",
+								"{{company_id}}"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Premium Turf Arena\",\n  \"address\": \"Gulshan, Dhaka\"\n}",
+							"raw": "{\n  \"name\": \"Green Field Turf (Updated)\",\n  \"address\": \"Gulshan, Dhaka\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/turf-companies/{{company_id}}"
-						}
+						"description": "Admin or the company owner. ownerId change is admin-only."
 					},
 					"response": []
 				},
@@ -294,8 +744,16 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/turf-companies/{{company_id}}"
-						}
+							"raw": "{{base_url}}/turf-companies/{{company_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"turf-companies",
+								"{{company_id}}"
+							]
+						},
+						"description": "Admin or the company owner."
 					},
 					"response": []
 				}
@@ -306,63 +764,142 @@
 			"item": [
 				{
 					"name": "Create Ground",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.data && jsonData.data.id) {",
-									"        pm.collectionVariables.set(\"ground_id\", jsonData.data.id);",
-									"    } else if (jsonData.data && jsonData.data._id) {",
-									"        pm.collectionVariables.set(\"ground_id\", jsonData.data._id);",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
 					"request": {
 						"method": "POST",
 						"header": [
 							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{base_url}}/grounds",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"grounds"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Gulshan Cricket Turf\",\n  \"description\": \"Premium turf for cricket matches\",\n  \"companyId\": \"{{company_id}}\",\n  \"sportsType\": \"Cricket\",\n  \"slotDuration\": 60,\n  \"advancePayment\": true,\n  \"operatingHours\": {\n    \"start\": \"06:00\",\n    \"end\": \"22:00\"\n  },\n  \"pricingConfig\": {\n    \"basePrice\": 1000,\n    \"weekendPrice\": 1500,\n    \"timeRules\": [\n      {\n        \"startTime\": \"06:00\",\n        \"endTime\": \"12:00\",\n        \"price\": 800\n      },\n      {\n        \"startTime\": \"18:00\",\n        \"endTime\": \"22:00\",\n        \"price\": 1800\n      }\n    ]\n  },\n  \"campaigns\": [\n    {\n      \"name\": \"Eid Special\",\n      \"startDate\": \"2026-06-01\",\n      \"endDate\": \"2026-06-15\",\n      \"discountPercentage\": 10\n    }\n  ]\n}",
+							"raw": "{\n  \"name\": \"Main Ground\",\n  \"description\": \"Floodlit turf, suitable for 7-a-side\",\n  \"companyId\": \"{{company_id}}\",\n  \"sports\": [\n    \"cricket\",\n    \"football\"\n  ],\n  \"slotDuration\": 90,\n  \"advancePayment\": true,\n  \"operatingHours\": {\n    \"start\": \"06:00\",\n    \"end\": \"23:00\"\n  },\n  \"pricingConfig\": {\n    \"basePrice\": 1500,\n    \"weekendPrice\": 2200,\n    \"timeRules\": [\n      {\n        \"startTime\": \"06:00\",\n        \"endTime\": \"12:00\",\n        \"price\": 1200\n      },\n      {\n        \"startTime\": \"17:00\",\n        \"endTime\": \"23:00\",\n        \"price\": 2000\n      }\n    ]\n  },\n  \"campaigns\": [\n    {\n      \"name\": \"Eid Offer\",\n      \"startDate\": \"2026-06-01\",\n      \"endDate\": \"2026-06-10\",\n      \"discountPercentage\": 10\n    }\n  ],\n  \"status\": \"active\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/grounds"
-						}
+						"description": "super_admin or turf_owner (with active company). A ground can host multiple sports."
 					},
-					"response": []
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('ground_id', id); }",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Search Available Grounds",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/grounds/search?date=2026-06-06&sport=football&startTime=17:00&endTime=23:00&companyId={{company_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"grounds",
+								"search"
+							],
+							"query": [
+								{
+									"key": "date",
+									"value": "2026-06-06",
+									"disabled": false
+								},
+								{
+									"key": "sport",
+									"value": "football",
+									"disabled": false
+								},
+								{
+									"key": "startTime",
+									"value": "17:00",
+									"disabled": false
+								},
+								{
+									"key": "endTime",
+									"value": "23:00",
+									"disabled": false
+								},
+								{
+									"key": "companyId",
+									"value": "{{company_id}}",
+									"disabled": true
+								}
+							]
+						},
+						"auth": {
+							"type": "noauth"
+						},
+						"description": "Public. Returns active grounds with at least one free slot for the date/sport/time window, each with availableSlots. date is required; the rest are optional."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('ground_id', id); }",
+									"    var s = first && first.availableSlots && first.availableSlots[0];",
+									"    if (s) { pm.collectionVariables.set('slot_id', s._id || s.id); }",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Get All Grounds",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text",
-								"disabled": true
-							}
-						],
+						"header": [],
 						"url": {
-							"raw": "{{base_url}}/grounds"
-						}
+							"raw": "{{base_url}}/grounds?companyId={{company_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"grounds"
+							],
+							"query": [
+								{
+									"key": "companyId",
+									"value": "{{company_id}}",
+									"disabled": true
+								}
+							]
+						},
+						"auth": {
+							"type": "noauth"
+						},
+						"description": "Public. Owners/maintainers sending their token only see their active company."
 					},
 					"response": []
 				},
@@ -372,7 +909,17 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/grounds/{{ground_id}}"
+							"raw": "{{base_url}}/grounds/{{ground_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"grounds",
+								"{{ground_id}}"
+							]
+						},
+						"auth": {
+							"type": "noauth"
 						}
 					},
 					"response": []
@@ -383,23 +930,30 @@
 						"method": "PATCH",
 						"header": [
 							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{base_url}}/grounds/{{ground_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"grounds",
+								"{{ground_id}}"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Gulshan Cricket Turf Updated\",\n  \"pricingConfig\": {\n    \"basePrice\": 1100,\n    \"weekendPrice\": 1600\n  }\n}",
+							"raw": "{\n  \"sports\": [\n    \"football\"\n  ],\n  \"pricingConfig\": {\n    \"basePrice\": 1600\n  },\n  \"status\": \"active\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/grounds/{{ground_id}}"
-						}
+						"description": "super_admin, owner, maintainer (own company only)."
 					},
 					"response": []
 				},
@@ -407,15 +961,16 @@
 					"name": "Delete Ground",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
-							}
-						],
+						"header": [],
 						"url": {
-							"raw": "{{base_url}}/grounds/{{ground_id}}"
+							"raw": "{{base_url}}/grounds/{{ground_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"grounds",
+								"{{ground_id}}"
+							]
 						}
 					},
 					"response": []
@@ -427,64 +982,82 @@
 			"item": [
 				{
 					"name": "Get Slots for Date",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.data && jsonData.data.length > 0) {",
-									"        pm.collectionVariables.set(\"slot_id\", jsonData.data[0].id || jsonData.data[0]._id);",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/slots?groundId={{ground_id}}&date=2026-06-06",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"slots"
+							],
 							"query": [
 								{
 									"key": "groundId",
-									"value": "{{ground_id}}"
+									"value": "{{ground_id}}",
+									"disabled": false
 								},
 								{
 									"key": "date",
-									"value": "2026-06-06"
+									"value": "2026-06-06",
+									"disabled": false
 								}
 							]
-						}
+						},
+						"auth": {
+							"type": "noauth"
+						},
+						"description": "Public. Generates the day's slots from the ground config on first request (hours, duration, weekend/time prices, campaigns)."
 					},
-					"response": []
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('slot_id', id); }",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Update/Disable Slot",
+					"name": "Update / Disable Slot",
 					"request": {
 						"method": "PATCH",
 						"header": [
 							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{base_url}}/slots/{{slot_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"slots",
+								"{{slot_id}}"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"isDisabled\": true\n}",
+							"raw": "{\n  \"isDisabled\": true,\n  \"price\": 1800\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/slots/{{slot_id}}"
-						}
+						"description": "super_admin, owner, maintainer (own company only)."
 					},
 					"response": []
 				}
@@ -494,106 +1067,188 @@
 			"name": "Booking",
 			"item": [
 				{
-					"name": "Create Booking",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.data && jsonData.data.id) {",
-									"        pm.collectionVariables.set(\"booking_id\", jsonData.data.id);",
-									"    } else if (jsonData.data && jsonData.data._id) {",
-									"        pm.collectionVariables.set(\"booking_id\", jsonData.data._id);",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
+					"name": "Create Booking (Customer)",
 					"request": {
 						"method": "POST",
 						"header": [
 							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{base_url}}/bookings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"bookings"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"slotId\": \"{{slot_id}}\"\n}",
+							"raw": "{\n  \"slotId\": \"{{slot_id}}\",\n  \"sport\": \"football\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/bookings"
-						}
+						"description": "sport is required when the ground hosts more than one sport. Status starts as pending."
 					},
-					"response": []
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('booking_id', id); }",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Manual Booking (Phone / Walk-in)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/bookings/manual",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"bookings",
+								"manual"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slotId\": \"{{slot_id}}\",\n  \"sport\": \"cricket\",\n  \"customerName\": \"Walk-in Customer\",\n  \"customerPhone\": \"+8801812345678\",\n  \"advancePaid\": 500,\n  \"paymentStatus\": \"pending\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "super_admin / turf_owner / maintainer. Slot must belong to the active company. Created as confirmed, source=manual."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('booking_id', id); }",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Get All Bookings",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
-							}
-						],
+						"header": [],
 						"url": {
-							"raw": "{{base_url}}/bookings"
-						}
+							"raw": "{{base_url}}/bookings?companyId={{company_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"bookings"
+							],
+							"query": [
+								{
+									"key": "companyId",
+									"value": "{{company_id}}",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Users see own; owner/maintainer see active company; super_admin sees all (optionally ?companyId=)."
 					},
-					"response": []
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var d = pm.response.json().data;",
+									"    var first = Array.isArray(d) ? d[0] : d;",
+									"    if (first) { var id = first._id || first.id; if (id) pm.collectionVariables.set('booking_id', id); }",
+									"}"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Get Single Booking",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
-							}
-						],
+						"header": [],
 						"url": {
-							"raw": "{{base_url}}/bookings/{{booking_id}}"
+							"raw": "{{base_url}}/bookings/{{booking_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"bookings",
+								"{{booking_id}}"
+							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Update Booking (Cancel/Pay)",
+					"name": "Update Booking (Confirm / Cancel / Pay)",
 					"request": {
 						"method": "PATCH",
 						"header": [
 							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}",
-								"type": "text"
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{base_url}}/bookings/{{booking_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"bookings",
+								"{{booking_id}}"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"paymentStatus\": \"paid\",\n  \"status\": \"confirmed\"\n}",
+							"raw": "{\n  \"status\": \"cancelled\",\n  \"paymentStatus\": \"paid\",\n  \"advancePaid\": 500\n}",
 							"options": {
 								"raw": {
 									"language": "json"
 								}
 							}
 						},
-						"url": {
-							"raw": "{{base_url}}/bookings/{{booking_id}}"
-						}
+						"description": "super_admin / owner / maintainer. Cancelling frees the slot; re-confirming re-books it if still free."
 					},
 					"response": []
 				}
@@ -613,12 +1268,12 @@
 		},
 		{
 			"key": "user_id",
-			"value": "65cd1a2b3c4d5e6f7a8b9c0a",
+			"value": "",
 			"type": "string"
 		},
 		{
 			"key": "company_id",
-			"value": "65cd1a2b3c4d5e6f7a8b9c0d",
+			"value": "",
 			"type": "string"
 		},
 		{

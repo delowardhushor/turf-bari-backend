@@ -44,7 +44,39 @@ const signupEmailZodSchema = z.object({
   }),
 });
 
+const changePasswordZodSchema = z.object({
+  body: z.object({
+    oldPassword: z.string().min(1, 'Old password is required'),
+    newPassword: z.string().min(6, 'Password must be at least 6 characters long'),
+  }),
+});
+
+const identifier = {
+  email: z.string().email('Invalid email address').optional(),
+  phoneNumber: z.string().min(1).optional(),
+};
+const hasIdentifier = (b: { email?: string; phoneNumber?: string }) =>
+  !!b.email !== !!b.phoneNumber;
+const identifierMsg = { message: 'Provide either email or phoneNumber' };
+
+const forgotPasswordZodSchema = z.object({
+  body: z.object(identifier).refine(hasIdentifier, identifierMsg),
+});
+
+const resetPasswordZodSchema = z.object({
+  body: z
+    .object({
+      ...identifier,
+      otp: z.string().length(6, 'OTP must be 6 digits'),
+      newPassword: z.string().min(6, 'Password must be at least 6 characters long'),
+    })
+    .refine(hasIdentifier, identifierMsg),
+});
+
 export const AuthValidation = {
+  changePasswordZodSchema,
+  forgotPasswordZodSchema,
+  resetPasswordZodSchema,
   emailLoginZodSchema,
   phoneLoginZodSchema,
   googleLoginZodSchema,

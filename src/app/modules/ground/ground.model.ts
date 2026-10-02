@@ -16,9 +16,14 @@ const groundSchema = new Schema<IGround, GroundModelType>(
       ref: 'TurfCompany',
       required: true,
     },
-    sportsType: {
-      type: String,
+    // A ground can host several sports (e.g. cricket and football); stored lower-case
+    sports: {
+      type: [{ type: String, trim: true, lowercase: true }],
       required: true,
+      validate: {
+        validator: (v: string[]) => v.length > 0,
+        message: 'At least one sport is required',
+      },
     },
     slotDuration: {
       type: Number,

@@ -34,6 +34,13 @@ router.post(
   GroundController.createGround
 );
 
+// Must be declared before '/:id'
+router.get(
+  '/search',
+  validateRequest(GroundValidation.searchGroundZodSchema),
+  GroundController.searchGrounds
+);
+
 router.get('/:id', GroundController.getSingleGround);
 
 router.patch(

@@ -127,7 +127,14 @@ const getSlotsForDate = async (groundId: string, date: string): Promise<ISlot[]>
   }
 
   // Save slots to database
-  await Slot.insertMany(generatedSlotsData);
+  try {
+    await Slot.insertMany(generatedSlotsData, { ordered: false });
+  } catch (error: any) {
+    // A concurrent request already generated them (duplicate key) - that's fine
+    if (error?.code !== 11000 && !error?.writeErrors?.every((e: any) => e.err?.code === 11000)) {
+      throw error;
+    }
+  }
 
   // Retrieve them again from DB to obtain mongoose _ids
   slots = await Slot.find({ groundId, date });

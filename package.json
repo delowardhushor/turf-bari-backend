@@ -7,6 +7,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "rimraf dist && tsc",
     "start": "node dist/server.js",
+    "seed:admin": "ts-node --transpile-only src/seed.ts admin",
+    "seed:demo": "ts-node --transpile-only src/seed.ts demo",
     "clean": "rimraf dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

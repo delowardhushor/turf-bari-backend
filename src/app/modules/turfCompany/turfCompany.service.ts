@@ -49,6 +49,23 @@ const getAllTurfCompanies = async (): Promise<ITurfCompany[]> => {
   return result;
 };
 
+const getMyTurfCompanies = async (userId: string): Promise<ITurfCompany[]> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  return await TurfCompany.find({ _id: { $in: user.companies || [] } });
+};
+
+// Whether a non-admin user is linked to the company
+const isLinkedToCompany = async (
+  userId: string,
+  companyId: string
+): Promise<boolean> => {
+  const user = await User.findById(userId);
+  return !!user?.companies?.some((c) => c.toString() === companyId);
+};
+
 const getSingleTurfCompany = async (id: string): Promise<ITurfCompany | null> => {
   const result = await TurfCompany.findById(id).populate('ownerId');
   return result;
@@ -66,12 +83,17 @@ const updateTurfCompany = async (
 
 const deleteTurfCompany = async (id: string): Promise<ITurfCompany | null> => {
   const result = await TurfCompany.findByIdAndDelete(id);
+  if (result) {
+    await User.updateMany({ companies: id }, { $pull: { companies: id } });
+  }
   return result;
 };
 
 export const TurfCompanyService = {
   createTurfCompany,
   getAllTurfCompanies,
+  getMyTurfCompanies,
+  isLinkedToCompany,
   getSingleTurfCompany,
   updateTurfCompany,
   deleteTurfCompany,

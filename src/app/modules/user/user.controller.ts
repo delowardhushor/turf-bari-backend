@@ -4,6 +4,21 @@ import sendResponse from '../../shared/sendResponse';
 import httpStatus from 'http-status';
 import { UserService } from './user.service';
 import { IUser } from './user.interface';
+import ApiError from '../../errors/ApiError';
+
+// Non-admins may only act on their own account
+const assertSelfOrAdmin = (req: Request, id: string) => {
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'You are not authorized');
+  }
+  if (user.role !== 'super_admin' && user.userId !== id) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      'Forbidden: You can only access your own account'
+    );
+  }
+};
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
   const { ...userData } = req.body;
@@ -30,6 +45,7 @@ const getAllUsers = catchAsync(async (_req: Request, res: Response) => {
 
 const getSingleUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+  assertSelfOrAdmin(req, id as string);
   const result = await UserService.getSingleUser(id as string);
 
   sendResponse<IUser>(res, {
@@ -42,7 +58,16 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
 
 const updateUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+  assertSelfOrAdmin(req, id as string);
   const { ...userData } = req.body;
+
+  // Only admins may change role, company links or the Google identity
+  if (req.user!.role !== 'super_admin') {
+    delete userData.role;
+    delete userData.companies;
+    delete userData.googleId;
+  }
+
   const result = await UserService.updateUser(id as string, userData);
 
   sendResponse<IUser>(res, {

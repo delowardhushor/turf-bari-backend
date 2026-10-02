@@ -26,6 +26,10 @@ const userSchema = new Schema<IUser, UserModel>(
       type: String,
       select: false,
     },
+    // Forgot-password OTP (hashed) with expiry and attempt counter
+    resetOtpHash: { type: String, select: false },
+    resetOtpExpires: { type: Date, select: false },
+    resetOtpAttempts: { type: Number, select: false, default: 0 },
     googleId: {
       type: String,
       unique: true,

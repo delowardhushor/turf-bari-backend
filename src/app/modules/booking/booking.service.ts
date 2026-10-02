@@ -6,10 +6,28 @@ import { Ground } from '../ground/ground.model';
 import ApiError from '../../errors/ApiError';
 import httpStatus from 'http-status';
 
-const createBooking = async (
-  userId: string,
-  slotId: string
-): Promise<IBooking> => {
+type ICreateBookingInput = {
+  userId?: string;
+  slotId: string;
+  sport?: string;
+  // Set when staff book on behalf of a customer (phone / walk-in)
+  manual?: {
+    customerName: string;
+    customerPhone: string;
+    advancePaid?: number;
+    paymentStatus?: 'pending' | 'paid';
+  };
+  // When set, the slot's ground must belong to this company
+  enforceCompanyId?: string;
+};
+
+const createBooking = async ({
+  userId,
+  slotId,
+  sport,
+  manual,
+  enforceCompanyId,
+}: ICreateBookingInput): Promise<IBooking> => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -34,8 +52,31 @@ const createBooking = async (
       throw new ApiError(httpStatus.NOT_FOUND, 'Ground not found for this slot');
     }
 
+    if (enforceCompanyId && ground.companyId.toString() !== enforceCompanyId) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        'Forbidden: This slot belongs to another company'
+      );
+    }
+
+    // Resolve which sport is being booked
+    const chosenSport = (sport || (ground.sports.length === 1 ? ground.sports[0] : '')).toLowerCase();
+    if (!chosenSport) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Please choose a sport: ${ground.sports.join(', ')}`
+      );
+    }
+    if (!ground.sports.includes(chosenSport)) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `This ground does not support "${chosenSport}". Available: ${ground.sports.join(', ')}`
+      );
+    }
+
     // 3. Determine advance payment amount (e.g. 50% of slot price if advancePayment is true)
-    const advancePaidAmount = ground.advancePayment ? Math.round(slot.price * 0.5) : 0;
+    const advancePaidAmount =
+      manual?.advancePaid ?? (ground.advancePayment ? Math.round(slot.price * 0.5) : 0);
 
     // 4. Mark slot as booked
     slot.isBooked = true;
@@ -45,15 +86,20 @@ const createBooking = async (
     const [booking] = await Booking.create(
       [
         {
-          userId: new Types.ObjectId(userId),
+          userId: userId ? new Types.ObjectId(userId) : undefined,
+          customerName: manual?.customerName,
+          customerPhone: manual?.customerPhone,
+          source: manual ? 'manual' : 'online',
           groundId: slot.groundId,
           slotId: slot._id,
+          sport: chosenSport,
           companyId: ground.companyId,
           bookingDate: slot.date,
           totalPrice: slot.price,
           advancePaid: advancePaidAmount,
-          paymentStatus: 'pending',
-          status: 'pending',
+          paymentStatus: manual?.paymentStatus ?? 'pending',
+          // Staff-made bookings are confirmed straight away
+          status: manual ? 'confirmed' : 'pending',
         },
       ],
       { session }
