@@ -5,6 +5,7 @@ import httpStatus from 'http-status';
 import { SlotService } from '../slot/slot.service';
 import { ISlot } from '../slot/slot.interface';
 import { validateTimeBands } from './ground.pricing';
+import { SportService } from '../sport/sport.service';
 
 const assertValidTimeBands = (
   bands: IGround['pricingConfig']['timeBands'],
@@ -18,6 +19,7 @@ const assertValidTimeBands = (
 
 const createGround = async (payload: IGround): Promise<IGround> => {
   assertValidTimeBands(payload.pricingConfig.timeBands, payload.operatingHours);
+  await SportService.assertValidGroundSports(payload.sports);
   const result = await Ground.create(payload);
   return result;
 };
@@ -49,6 +51,10 @@ const updateGround = async (
   }
 
   const { pricingConfig, ...rest } = payload;
+
+  if (payload.sports) {
+    await SportService.assertValidGroundSports(payload.sports, isExist.sports);
+  }
 
   // Bands are checked against the operating hours the ground will have after this update
   assertValidTimeBands(

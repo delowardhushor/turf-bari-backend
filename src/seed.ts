@@ -2,7 +2,8 @@
  * Seed script. Never deletes or overwrites existing data - it only creates
  * records that are missing (matched by email / company name / ground name).
  *
- *   yarn seed:admin   creates the first super_admin (safe for production)
+ *   yarn seed:admin   creates the first super_admin and the default sports (safe for production)
+ *   yarn seed:sports  creates the default sports, and one for every sport key grounds already use
  *   yarn seed:demo    creates demo owner/maintainer/customer, companies and grounds
  *
  * Admin credentials come from SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD (and optional SEED_ADMIN_NAME).
@@ -12,6 +13,7 @@ import config from './app/config';
 import { User } from './app/modules/user/user.model';
 import { TurfCompany } from './app/modules/turfCompany/turfCompany.model';
 import { Ground } from './app/modules/ground/ground.model';
+import { Sport } from './app/modules/sport/sport.model';
 
 const DEMO_PASSWORD = 'password123';
 
@@ -34,6 +36,45 @@ async function ensureUser(data: {
   return user;
 }
 
+const DEFAULT_SPORTS = [
+  { key: 'football', en: 'Football', bn: 'ফুটবল', icon: '⚽' },
+  { key: 'cricket', en: 'Cricket', bn: 'ক্রিকেট', icon: '🏏' },
+  { key: 'futsal', en: 'Futsal', bn: 'ফুটসাল', icon: '🥅' },
+  { key: 'table-tennis', en: 'Table Tennis', bn: 'টেবিল টেনিস', icon: '🏓' },
+  { key: 'badminton', en: 'Badminton', bn: 'ব্যাডমিন্টন', icon: '🏸' },
+  { key: 'tennis', en: 'Tennis', bn: 'টেনিস', icon: '🎾' },
+  { key: 'volleyball', en: 'Volleyball', bn: 'ভলিবল', icon: '🏐' },
+  { key: 'basketball', en: 'Basketball', bn: 'বাস্কেটবল', icon: '🏀' },
+];
+
+const titleCase = (key: string) =>
+  key.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+async function ensureSport(key: string, name: { en: string; bn?: string }, icon: string | undefined, order: number) {
+  if (await Sport.exists({ key })) {
+    log(`  = sport exists: ${key}`);
+    return;
+  }
+  await Sport.create({ key, name, icon, order });
+  log(`  + sport created: ${key}`);
+}
+
+// Defaults first, then any key already stored on a ground (free text from before sports were managed)
+async function seedSports() {
+  for (const [i, s] of DEFAULT_SPORTS.entries()) {
+    await ensureSport(s.key, { en: s.en, bn: s.bn }, s.icon, i);
+  }
+  const used: string[] = await Ground.distinct('sports');
+  for (const key of used) {
+    const normalised = key.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    if (normalised && normalised === key) {
+      await ensureSport(key, { en: titleCase(key) }, undefined, DEFAULT_SPORTS.length);
+    } else {
+      log(`  ! ground sport "${key}" is not a valid key - fix it on the ground`);
+    }
+  }
+}
+
 async function seedAdmin() {
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
@@ -49,6 +90,7 @@ async function seedAdmin() {
     password,
     role: 'super_admin',
   });
+  await seedSports();
 }
 
 async function ensureCompany(name: string, address: string, ownerId: mongoose.Types.ObjectId) {
@@ -81,6 +123,8 @@ async function seedDemo() {
   if (config.env === 'production' && process.env.SEED_ALLOW_PRODUCTION !== 'true') {
     throw new Error('Refusing to seed demo data in production (set SEED_ALLOW_PRODUCTION=true to override)');
   }
+
+  await seedSports();
 
   const owner = await ensureUser({
     name: 'Demo Owner',
@@ -159,8 +203,8 @@ async function seedDemo() {
 
 async function main() {
   const mode = process.argv[2];
-  if (mode !== 'admin' && mode !== 'demo') {
-    console.error('Usage: seed.ts <admin|demo>');
+  if (mode !== 'admin' && mode !== 'demo' && mode !== 'sports') {
+    console.error('Usage: seed.ts <admin|demo|sports>');
     process.exit(1);
   }
 
@@ -169,6 +213,7 @@ async function main() {
   log(`Connected to ${host}/${name} (NODE_ENV=${config.env}) - seeding "${mode}" (existing data is never modified)\n`);
 
   if (mode === 'admin') await seedAdmin();
+  else if (mode === 'sports') await seedSports();
   else await seedDemo();
 
   log('\nDone.');
