@@ -7,6 +7,9 @@ import config from './app/config';
 
 const app: Application = express();
 
+// Behind a proxy/load balancer, trust it so req.ip (used by OTP rate limits) is the real client
+if (config.trust_proxy > 0) app.set('trust proxy', config.trust_proxy);
+
 // Parser Middlewares
 app.use(cors());
 app.use(express.json());

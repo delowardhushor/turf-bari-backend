@@ -15,6 +15,8 @@ import jwt from 'jsonwebtoken';
 import config from '../../config';
 import crypto from 'crypto';
 import { TurfCompany } from '../turfCompany/turfCompany.model';
+import { reserveOtpSend } from '../otp/otp.throttle';
+import { normalizeBdPhone, sendSms } from '../../utils/sms';
 
 // Helper to sign JWT
 const createToken = (
@@ -246,24 +248,49 @@ const changePassword = async (
   await user.save();
 };
 
-// Generates a 6-digit OTP. Always resolves the same way so callers can't probe
-// which emails/phones are registered.
-const forgotPassword = async (identifier: {
-  email?: string;
-  phoneNumber?: string;
-}): Promise<void> => {
+// Sends a 6-digit OTP by SMS (phone) after checking the send limits. Unknown accounts get the
+// same success response so the endpoint doesn't confirm who is registered.
+const forgotPassword = async (
+  identifier: { email?: string; phoneNumber?: string },
+  ip?: string
+): Promise<void> => {
+  const phone = identifier.phoneNumber ? normalizeBdPhone(identifier.phoneNumber) : null;
+  const recipient = phone ?? (identifier.email ?? identifier.phoneNumber ?? '').toLowerCase();
+
+  // Throttle before the lookup so existing and unknown accounts are limited identically
+  const release = await reserveOtpSend(recipient, ip);
+
   const user = await User.findOne(identifier);
   if (!user) return;
 
-  const otp = config.otp_static_code || crypto.randomInt(100000, 1000000).toString();
+  const useStatic = !!config.otp_static_code && config.env !== 'production';
+  const otp = useStatic ? config.otp_static_code : crypto.randomInt(100000, 1000000).toString();
   user.resetOtpHash = hashOtp(otp);
   user.resetOtpExpires = new Date(Date.now() + OTP_TTL_MS);
   user.resetOtpAttempts = 0;
   await user.save();
 
-  // TODO: deliver via SMS / email provider. Until one is wired up, log in dev only.
-  if (config.env !== 'production' && !config.otp_static_code) {
-    console.log(`[forgot-password] OTP for ${identifier.email ?? identifier.phoneNumber}: ${otp}`);
+  if (useStatic) return; // dev shortcut: no SMS, the code is the configured one
+
+  try {
+    if (!identifier.phoneNumber) {
+      // No email provider yet; only phone accounts can receive an OTP
+      throw new ApiError(httpStatus.BAD_REQUEST, 'OTP by email is not available yet. Use your phone number.');
+    }
+    if (!phone) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'OTP can only be sent to a Bangladesh mobile number');
+    }
+    await sendSms(
+      phone,
+      `Your TurfBari verification code is ${otp}. It expires in ${OTP_TTL_MS / 60000} minutes. Do not share it with anyone.`
+    );
+  } catch (err) {
+    // Nothing was delivered: drop the unusable code and don't count it against the user's quota
+    user.resetOtpHash = undefined;
+    user.resetOtpExpires = undefined;
+    await user.save();
+    await release();
+    throw err;
   }
 };
 

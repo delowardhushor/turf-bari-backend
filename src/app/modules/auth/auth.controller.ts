@@ -93,7 +93,7 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
 
 const forgotPassword = catchAsync(async (req: Request, res: Response) => {
   const { email, phoneNumber } = req.body;
-  await AuthService.forgotPassword({ email, phoneNumber });
+  await AuthService.forgotPassword({ email, phoneNumber }, req.ip);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

@@ -57,6 +57,10 @@ const globalErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
       : [];
   }
 
+  if (error instanceof ApiError && error.retryAfter) {
+    res.set('Retry-After', String(error.retryAfter));
+  }
+
   res.status(statusCode).json({
     success: false,
     message,
